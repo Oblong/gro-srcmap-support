@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/Oblong/gro-srcmap-support/issues"
   },
-  "homepage": "https://github.com/Oblong/gro-srcmap-support"
+  "homepage": "https://github.com/Oblong/gro-srcmap-support",
+  "dependencies": {
+    "source-map": "^0.4.2"
+  }
 }
