@@ -5,14 +5,14 @@
 /* global __current_script_name__ */
 /* global read */
 
-// Source-mapping support for Growroom applications, intended to 
-// help map errors from a line number in a webpack-compiled bundle 
-// back to a line number in the author's original source file.  
+// Source-mapping support for Growroom applications, intended to
+// help map errors from a line number in a webpack-compiled bundle
+// back to a line number in the author's original source file.
 
 //  require()ing this will install some
 // functions and properties into the global namespace.
 
-let SourceMapConsumer = require('source-map').SourceMapConsumer;
+var SourceMapConsumer = require('source-map').SourceMapConsumer;
 
 // V8 locks down the prototypes of several internal objects like CallSite
 // (which is the constructor for the stack frames we manipulate).
@@ -86,17 +86,17 @@ function CallSiteToString() {
   return line;
 }
 
-global.Error.prepareStackTrace = (error, stack) => {
-  let source_map;
+global.Error.prepareStackTrace = function (error, stack) {
+  var source_map;
   if (__current_script_name__ && __current_source_mapping_url__) {
     // The sourceMappingURL webpack writes is relative to the the
     // script's path.
-    let path_segments = __current_script_name__.split('/');
-    let nsegs = path_segments.length;
+    var path_segments = __current_script_name__.split('/');
+    var nsegs = path_segments.length;
     path_segments[nsegs - 1] = __current_source_mapping_url__;
-    let source_map_path = path_segments.join('/');
+    var source_map_path = path_segments.join('/');
     try {
-      let src = read(source_map_path);
+      var src = read(source_map_path);
       source_map = JSON.parse(src);
     } catch (e) {
       return error.stack + '\n    (error reading source map)';
@@ -108,47 +108,48 @@ global.Error.prepareStackTrace = (error, stack) => {
   // *any* uncaught errors in the block below would completely wreck
   // the stack trace.
   try {
-    let smc = new SourceMapConsumer(source_map);
-    let stack_trace = error;
-    for (let frame of stack) {
+    var smc = new SourceMapConsumer(source_map);
+    var stack_trace = error;
+    stack.forEach(function (frame) {
       if (frame.getFileName() === __current_script_name__) {
-        let orig = smc.originalPositionFor({
+        var orig = smc.originalPositionFor({
           line: frame.getLineNumber(),
           column: frame.getColumnNumber()
         });
-        let mapped_frame = {};
+        var mapped_frame = {};
         if (orig.source !== null) {
           // V8 locks down the prototypes of some internal objects,
           // like CallSite (the constructor for `frame`), so we resort
           // to some shenanigans.
-          let frame_proto = Object.getPrototypeOf(frame);
-          const tostring_props = [ // properties used in CallSiteToString
+          var frame_proto = Object.getPrototypeOf(frame);
+          var tostring_props = [ // properties used in CallSiteToString
             'isNative', 'isEval', 'getEvalOrigin', 'getFunctionName',
             'isConstructor', 'isToplevel', 'getTypeName', 'getMethodName'
           ];
-          for (let prop of Object.getOwnPropertyNames(frame_proto)) {
+          var properties = Object.getOwnPropertyNames(frame_proto);
+          properties.forEach(function (prop) {
             if (tostring_props.indexOf(prop) >= 0) {
               mapped_frame[prop] = frame[prop].bind(frame);
             } else {
               mapped_frame[prop] = frame[prop];
             }
-          }
+          });
           // Demunge the name of the tmp file created by JSExecutor to hold
           // the original script + the appendix
-          let matches = orig.source.match(/^(.*)\.tmp\.js$/);
+          var matches = orig.source.match(/^(.*)\.tmp\.js$/);
           if (matches) {
             orig.source = matches[1];
           }
-          mapped_frame.getScriptNameOrSourceURL = () => orig.source;
-          mapped_frame.getLineNumber = () => orig.line;
-          mapped_frame.getColumnNumber = () => orig.column;
+          mapped_frame.getScriptNameOrSourceURL = function () { return orig.source; };
+          mapped_frame.getLineNumber = function () { return orig.line; };
+          mapped_frame.getColumnNumber = function () { return orig.column; };
           mapped_frame.toString = CallSiteToString;
         } else {
           mapped_frame = frame;
         }
         stack_trace += '\n  at ' + mapped_frame.toString();
       }
-    }
+    });
     return stack_trace;
   } catch (e) {
     // The unfortunate thing about errors produced in the function
@@ -159,4 +160,3 @@ global.Error.prepareStackTrace = (error, stack) => {
       '\n    (error augmenting stack trace with source mappings)';
   }
 };
-
