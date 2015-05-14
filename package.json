@@ -4,10 +4,5 @@
   "description": "Source-mapping support for Growroom applications",
   "main": "index.js",
   "author": "oblong industries",
-  "license": "MIT",
-  "devDependencies": {
-    "chai": "^2.3.0",
-    "chai-stats": "^0.3.0",
-    "mocha": "^2.2.4"
-  }
+  "license": "MIT"
 }
